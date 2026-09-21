@@ -227,6 +227,76 @@ echo "Kernel              : $(uname -r)"
 echo "Arquitectura        : $(uname -m)"
 echo "Sistema             : $(uname -o 2>/dev/null || echo Android)"
 
+
+# ==========================================================
+# SOFTWARE
+# ==========================================================
+
+version_seguridad=$(getprop ro.build.version.security_patch)
+build_id=$(getprop ro.build.id)
+tipo_build=$(getprop ro.build.type)
+tags_build=$(getprop ro.build.tags)
+verified_boot=$(getprop ro.boot.verifiedbootstate)
+
+shell_actual=$(basename "$SHELL")
+
+# Version de Termux
+if command -v termux-info >/dev/null 2>&1; then
+    termux_version=$(termux-info 2>/dev/null |
+        grep -i "TERMUX_VERSION" |
+        head -n 1 |
+        cut -d: -f2- |
+        xargs)
+else
+    termux_version="No disponible"
+fi
+
+# Cantidad de aplicaciones Android de usuario
+apps_usuario=$(pm list packages -3 2>/dev/null | wc -l)
+
+# Cantidad de aplicaciones Android del sistema
+apps_sistema=$(pm list packages -s 2>/dev/null | wc -l)
+
+# Cantidad total de aplicaciones
+apps_total=$(pm list packages 2>/dev/null | wc -l)
+
+seccion "SOFTWARE"
+
+echo "Sistema operativo   : Android"
+echo "Version Android     : ${android:-No disponible}"
+echo "API Level           : ${api:-No disponible}"
+echo "Parche seguridad    : ${version_seguridad:-No disponible}"
+echo "Build ID            : ${build_id:-No disponible}"
+echo "Tipo de build       : ${tipo_build:-No disponible}"
+echo "Tags de build       : ${tags_build:-No disponible}"
+echo "Verified Boot       : ${verified_boot:-No disponible}"
+echo "Shell               : ${shell_actual:-No disponible}"
+echo "Version Termux      : ${termux_version:-No disponible}"
+echo "Aplicaciones total  : ${apps_total:-No disponible}"
+echo "Apps de usuario     : ${apps_usuario:-No disponible}"
+echo "Apps del sistema    : ${apps_sistema:-No disponible}"
+
+echo ""
+echo "Primeras aplicaciones de usuario:"
+
+if [ "$apps_usuario" -gt 0 ] 2>/dev/null; then
+    pm list packages -3 2>/dev/null |
+        head -n 15 |
+        sed 's/^package:/  - /'
+else
+    echo "  No disponible"
+fi
+
+echo ""
+echo "Paquetes instalados en Termux:"
+
+if command -v pkg >/dev/null 2>&1; then
+    pkg list-installed 2>/dev/null |
+        grep -E '^[a-zA-Z0-9._+-]+/' |
+        head -n 15
+else
+    echo "  No disponible"
+fi
 # ----------------------------------------------------------
 # FINAL
 # ----------------------------------------------------------
