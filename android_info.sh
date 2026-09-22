@@ -122,62 +122,49 @@ echo "Termux              : $(limpiar "$termux_version")"
 
 seccion "APLICACIONES INSTALADAS"
 
-# Intentar obtener aplicaciones mediante pm
-if command -v pm >/dev/null 2>&1; then
+# Android permite consultar los paquetes mediante cmd package.
+# Este metodo funciona mejor en versiones modernas de Android.
 
-    paquetes_usuario=$(pm list packages -3 2>/dev/null)
-    paquetes_sistema=$(pm list packages -s 2>/dev/null)
-    paquetes_total=$(pm list packages 2>/dev/null)
+paquetes_total=$(cmd package list packages 2>/dev/null)
+paquetes_usuario=$(cmd package list packages -3 2>/dev/null)
+paquetes_sistema=$(cmd package list packages -s 2>/dev/null)
 
-# Si pm no esta disponible, intentar mediante cmd
-elif command -v cmd >/dev/null 2>&1; then
-
-    paquetes_usuario=$(cmd package list packages -3 2>/dev/null)
-    paquetes_sistema=$(cmd package list packages -s 2>/dev/null)
-    paquetes_total=$(cmd package list packages 2>/dev/null)
-
-else
-
-    paquetes_usuario=""
-    paquetes_sistema=""
-    paquetes_total=""
-
-fi
-
-# Eliminar posibles lineas vacias
+# Eliminar lineas vacias
+paquetes_total=$(echo "$paquetes_total" | sed '/^[[:space:]]*$/d')
 paquetes_usuario=$(echo "$paquetes_usuario" | sed '/^[[:space:]]*$/d')
 paquetes_sistema=$(echo "$paquetes_sistema" | sed '/^[[:space:]]*$/d')
-paquetes_total=$(echo "$paquetes_total" | sed '/^[[:space:]]*$/d')
 
-cantidad_usuario=$(echo "$paquetes_usuario" | grep -c "^package:" 2>/dev/null)
-cantidad_sistema=$(echo "$paquetes_sistema" | grep -c "^package:" 2>/dev/null)
-cantidad_total=$(echo "$paquetes_total" | grep -c "^package:" 2>/dev/null)
-
-# Si no se pudo contar mediante grep, usar wc
-if [ "$cantidad_usuario" -eq 0 ] && [ -n "$paquetes_usuario" ]; then
-    cantidad_usuario=$(echo "$paquetes_usuario" | wc -l)
+# Contar paquetes
+if [ -n "$paquetes_total" ]; then
+    cantidad_total=$(echo "$paquetes_total" | grep -c "^package:")
+else
+    cantidad_total=0
 fi
 
-if [ "$cantidad_sistema" -eq 0 ] && [ -n "$paquetes_sistema" ]; then
-    cantidad_sistema=$(echo "$paquetes_sistema" | wc -l)
+if [ -n "$paquetes_usuario" ]; then
+    cantidad_usuario=$(echo "$paquetes_usuario" | grep -c "^package:")
+else
+    cantidad_usuario=0
 fi
 
-if [ "$cantidad_total" -eq 0 ] && [ -n "$paquetes_total" ]; then
-    cantidad_total=$(echo "$paquetes_total" | wc -l)
+if [ -n "$paquetes_sistema" ]; then
+    cantidad_sistema=$(echo "$paquetes_sistema" | grep -c "^package:")
+else
+    cantidad_sistema=0
 fi
 
-echo "Aplicaciones totales : $(limpiar "$cantidad_total")"
-echo "Apps de usuario      : $(limpiar "$cantidad_usuario")"
-echo "Apps del sistema     : $(limpiar "$cantidad_sistema")"
+echo "Aplicaciones totales : $cantidad_total"
+echo "Apps de usuario     : $cantidad_usuario"
+echo "Apps del sistema    : $cantidad_sistema"
 
 echo ""
 echo "Aplicaciones de usuario instaladas:"
 echo ""
 
-if [ -n "$paquetes_usuario" ]; then
+if [ "$cantidad_usuario" -gt 0 ]; then
 
     echo "$paquetes_usuario" |
-        sed 's/^package://g' |
+        sed 's/^package://' |
         head -n 30 |
         while read -r paquete
         do
